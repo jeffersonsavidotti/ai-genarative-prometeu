@@ -1,0 +1,21 @@
+# Arquivos de bytecode do Python
+*.pyc
+__pycache__/
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Arquivos de configuração do Streamlit (se houver)
+.streamlit/
+
+# Arquivos temporários do editor
+*.swp
+*~
+
+# Arquivos de log
+*.log
+
+# Arquivos específicos do sistema operacional
+.DS_Store
