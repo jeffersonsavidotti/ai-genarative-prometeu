@@ -2,7 +2,8 @@ import os
 import openai
 import dotenv
 import streamlit as st
-import hashlib  # For generating unique keys
+import hashlib
+from Scripts.script import extract_text_from_pdf, split_text, create_embeddings, search_with_embeddings
 
 # Carregar variáveis de ambiente do arquivo .env
 dotenv.load_dotenv()
@@ -13,75 +14,67 @@ client = openai.AzureOpenAI(
     api_version=os.getenv("OPENAI_API_VERSION"),
     azure_endpoint=os.getenv("OPENAI_ENDPOINT")
 )
-deployment_name = os.getenv("DEPLOYMENT_NAME", "gpt-4")
+deployment_name = os.getenv("DEPLOYMENT_NAME", "gpt-3.5")
 
-# Configuração da IA (no prompt da API)
-system_message = {
-    "role": "system",
-    "content": """Você é Prometeu, um assistente de criação de conteúdo com o poder do fogo! 
-                  Seu objetivo é ajudar os usuários a criar textos criativos e informativos."""
-}
+pdf_paths = ["./app/Data/1.pdf",
+            #  "./Data/2.pdf",
+             ]
+all_text_segments = []
 
-# Inicializar o estado da sessão (com valores padrão)
-if "current_conversation" not in st.session_state:
-    st.session_state.current_conversation = None
-if "conversations" not in st.session_state:
-    st.session_state.conversations = {}
+for pdf_path in pdf_paths:
+    with open(pdf_path, "rb") as file:
+        text = extract_text_from_pdf(file)
+        text_segments = split_text(text)
+        all_text_segments.extend(text_segments)
+ 
+embeddings = create_embeddings(all_text_segments, client)
 
-# Configurar o título da página
-st.set_page_config(page_title=f"🔥 IA Generativa Prometeu 💬")
+st.title("🔥 IA Generativa Prometeu 💬")
 
-# Função para gerar um título para a conversa (aprimorada)
-def generate_conversation_title(messages):
-    if messages:
-        prompt = f"Crie um título curto e descritivo para esta conversa:\n\n{messages[-1]['content']}"
-        response = client.chat.completions.create(
-            engine=deployment_name, messages=[system_message, {"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content.strip()
+# st.set_page_config(page_title=f"🔥 IA Generativa Prometeu 💬")
+# st.title(f"🔥 IA Generativa Prometeu 💬")
+
+# system_message = {
+#     "role": "system",
+#     "content": """Você é Prometeu, um assistente de criação de conteúdo com o poder do fogo! 
+#                   Seu objetivo é ajudar os usuários a criar textos criativos e informativos."""
+# }
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [
+        {"role": "assistant", "content": "Seu assistente de criação de conteúdo com o poder do fogo!"}
+    ]
+
+avatar = 'https://tmssl.akamaized.net/images/foto/galerie/neymar-brazil-2022-1668947300-97010.jpg?lm=1668947335'
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"], avatar=avatar if msg["role"]=="assistant" else None).write(msg["content"])
+ 
+if prompt := st.chat_input():
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user", avatar='🦹‍♂️').write(prompt)
+
+    if prompt:
+        try:
+            best_match_index, best_match_segment = search_with_embeddings(prompt, embeddings, all_text_segments, client)
+           
+            messages = [
+                {"role": "system", "content": "Você é um assistente pessoal nutrição."},
+                {"role": "system", "content": "Não responda perguntas que fujam do tema nutrição."},
+                {"role": "system", "content": "Você não deve dar respostas negativas ou desencorajar o usuário. Sempre forneça informações úteis e positivas."},
+                {"role": "user", "content": f"Seus artigos científicos aqui: {best_match_segment}, {prompt}"},
+            ]
+           
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature= 0.2,
+            )
+ 
+            answer = response.choices[0].message.content
+ 
+            st.session_state["messages"].append({"role": "assistant", "content": answer})
+            st.chat_message("assistant", avatar="🕵️‍♂️").write(answer)
+        except Exception as e:
+            st.error(f"OpenAI API error: {e}")
     else:
-        return "Nova Conversa"
-
-# Inicialização do Streamlit
-st.title(f"🔥 IA Generativa Prometeu 💬")
-st.write("Seu assistente de criação de conteúdo com o poder do fogo!")
-
-# Botão para iniciar nova conversa na barra lateral (corrigido)
-if st.sidebar.button("Nova Conversa", key="new_conversation_button"):
-    st.session_state.current_conversation = generate_conversation_title([])
-
-# Histórico de Conversas (com unique keys e lógica de exibição aprimorada)
-st.sidebar.title("Histórico de Conversas")
-for title in st.session_state.conversations:
-    if title != st.session_state.current_conversation:
-        key = hashlib.md5(title.encode()).hexdigest()
-        if st.sidebar.button(title, key=key):
-            st.session_state.current_conversation = title
-
-# Área principal de chat
-if st.session_state.current_conversation is None:
-    st.session_state.current_conversation = generate_conversation_title([])
-if st.session_state.current_conversation not in st.session_state.conversations:
-    st.session_state.conversations[st.session_state.current_conversation] = []
-
-st.header(st.session_state.current_conversation)
-for message in st.session_state.conversations.get(st.session_state.current_conversation, []):
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if prompt := st.chat_input("Digite sua mensagem"):
-    st.session_state.conversations[st.session_state.current_conversation].append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Chamada à API do OpenAI (atualizado)
-    messages = [system_message] + st.session_state.conversations[st.session_state.current_conversation]
-    response = client.chat.completions.create(
-        model=deployment_name, messages=messages
-    )
-
-    # Processar a resposta da API
-    msg = response.choices[0].message.content
-    st.session_state.conversations[st.session_state.current_conversation].append({"role": "assistant", "content": msg})
-    with st.chat_message("assistant"):
-        st.markdown(msg)
+        st.write("Please enter a question.")
