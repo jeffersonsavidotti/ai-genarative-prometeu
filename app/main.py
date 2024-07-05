@@ -16,7 +16,7 @@ client = openai.AzureOpenAI(
 )
 deployment_name = os.getenv("DEPLOYMENT_NAME", "gpt-3.5")
 
-pdf_paths = ["./app/Data/1.pdf",
+pdf_paths = ["./Data/1.pdf",
             #  "./Data/2.pdf",
              ]
 all_text_segments = []
