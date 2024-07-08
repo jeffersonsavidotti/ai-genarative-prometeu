@@ -6,8 +6,6 @@ services:
     volumes:
       - ./app:/app  
     environment:
-      - OPENAI_API_TYPE=${OPENAI_API_TYPE}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - DEPLOYMENT_NAME=${DEPLOYMENT_NAME}
