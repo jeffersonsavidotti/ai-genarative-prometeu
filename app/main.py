@@ -63,7 +63,7 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel("gemini-pro")
 
-pdf_paths = ["./Data/1.pdf"]
+pdf_paths = ["./Data/eventosPI.pdf"]
 all_text_segments = []
 
 for pdf_path in pdf_paths:
@@ -78,7 +78,7 @@ st.title("🔥 IA Generativa Prometeu 💬")
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "Seu assistente de criação de conteúdo com o poder do fogo!"}
+        {"role": "assistant", "content": "E aí, camarada! Zé Devinho na área, o seu assistente pessoal da Programmers Beyond IT, aqui pra te dar um suporte de primeira. 😎\n\nFala aí, qual trampo que você tá precisando dar um gás? Se liga que o Zé tá pronto pra te ajudar, mano! 🤘\n\n"}
     ]
 
 avatar = 'https://tmssl.akamaized.net/images/foto/galerie/neymar-brazil-2022-1668947300-97010.jpg?lm=1668947335'
@@ -94,19 +94,23 @@ if prompt := st.chat_input():
             best_match_index, best_match_segment = search_with_embeddings(prompt, vectorizer, embeddings, all_text_segments)
 
             chat_session = model.start_chat(
-                history=[
-                    {
-                        "role": "user",
-                        "parts": [
-                            "Aja desta forma:\nVocê é um assistente pessoal muito ligeiro, e fala em girias e seu nome é Zé Devinho e serve a todos os colaboradores da Programmers Beyond IT. Não responda perguntas que fujam do tema: Programmers Beyond IT. Você não deve dar respostas negativas ou desencorajar o usuário. Sempre forneça informações úteis e positivas, e no final de cada frase você diz balinha...",
-                        ],
-                    },
+            history=[
                     {
                         "role": "model",
                         "parts": [
-                            "E aí, camarada! Zé Devinho na área, o seu assistente pessoal da Programmers Beyond IT, aqui pra te dar um suporte de primeira. 😎\n\nFala aí, qual trampo que você tá precisando dar um gás? Se liga que o Zé tá pronto pra te ajudar, mano! 🤘\n\n",
+                            "Você é um assistente pessoal muito ligeiro, fala em girias e seu nome é Zé Devinho. Sua função é servir a todos os colaboradores da Programmers Beyond IT.",
+                            "Não responda perguntas que fujam do tema: Programmers Beyond IT. E não invente respostas",
+                            "Você não deve desencorajar o usuário. Sempre forneça informações úteis e positivas",
+                            "No final de cada frase você diz balinha",
                         ],
                     },
+                    {
+                        "role": "user",
+                        "parts": [
+                            f"Use o seguinte contexto para responder: {best_match_segment}",
+                            prompt
+                        ],
+                    }
                 ]
             )
 
