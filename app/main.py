@@ -2,32 +2,28 @@ import os
 import dotenv
 import google.generativeai as genai
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-# Função para extrair texto do PDF
+# ==== Funções de Processamento de PDF ====
 def extract_text_from_pdf(file):
-    # Read the file content into a bytes object
+    """Extrai texto de um arquivo PDF."""
     pdf_data = file.read()
-
-    # Open the PDF using the bytes data
     doc = fitz.open(stream=pdf_data, filetype="pdf")
-
     text = ""
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
         text += page.get_text()
     return text
 
-# Função para dividir o texto em segmentos
 def split_text(text, max_len=500):
+    """Divide o texto em segmentos menores."""
     words = text.split()
     segments = []
     current_segment = []
     current_length = 0
-
     for word in words:
         if current_length + len(word) + 1 > max_len:
             segments.append(' '.join(current_segment))
@@ -35,45 +31,70 @@ def split_text(text, max_len=500):
             current_length = 0
         current_segment.append(word)
         current_length += len(word) + 1
-
     if current_segment:
         segments.append(' '.join(current_segment))
-
     return segments
 
-# Função para criar embeddings dos segmentos de texto
 def create_embeddings(all_text_segments, client):
+    """Cria embeddings dos segmentos de texto usando TF-IDF."""
     vectorizer = TfidfVectorizer()
     embeddings = vectorizer.fit_transform(all_text_segments)
     return vectorizer, embeddings
 
-# Função para buscar o segmento mais relevante com base nos embeddings
 def search_with_embeddings(prompt, vectorizer, embeddings, all_text_segments):
+    """Busca o segmento mais relevante com base nos embeddings."""
     query_vec = vectorizer.transform([prompt])
     similarities = cosine_similarity(query_vec, embeddings).flatten()
     best_match_index = np.argmax(similarities)
     best_match_segment = all_text_segments[best_match_index]
     return best_match_index, best_match_segment
 
-# Carregar variáveis de ambiente do arquivo .env
-dotenv.load_dotenv()
+def load_existing_pdfs():
+    pdf_paths = [os.path.join("./Data", filename) 
+                 for filename in os.listdir("./Data") 
+                 if filename.lower().endswith(".pdf")] 
+    all_text_segments = []
+    for pdf_path in pdf_paths:
+        with open(pdf_path, "rb") as file:
+            text = extract_text_from_pdf(file)
+            text_segments = split_text(text)
+            all_text_segments.extend(text_segments)
+    return all_text_segments
 
-# Configure a API do Gemini
+
+# ==== Configuração da API do Gemini Pro ====
+dotenv.load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel("gemini-pro")
 
-pdf_paths = ["./Data/eventosPI.pdf"]
-all_text_segments = []
 
-for pdf_path in pdf_paths:
-    with open(pdf_path, "rb") as file:
-        text = extract_text_from_pdf(file)
-        text_segments = split_text(text)
-        all_text_segments.extend(text_segments)
+# ==== Carregamento de PDFs Existentes (agora em uma função) ====
+all_text_segments = load_existing_pdfs()
+vectorizer, embeddings = create_embeddings(all_text_segments, client=None)
 
-vectorizer, embeddings = create_embeddings(all_text_segments, client=None)  # Ajustado para não usar `client`
+# ==== Barra Lateral Personalizada ====
+with st.sidebar:
+    st.image("https://tmssl.akamaized.net/images/foto/galerie/neymar-brazil-2022-1668947300-97010.jpg?lm=1668947335", width=150)
+    st.title("🔥 Zé Devinho 💬")
 
+    # ==== Botão de Upload de Arquivo ====
+    uploaded_file = st.file_uploader("🚀 Upload do PDF:", type=["pdf"])
+    if uploaded_file is not None:
+        original_filename = uploaded_file.name
+        name, ext = os.path.splitext(original_filename)
+        ext = ext.lower()
+        save_path = os.path.join("./Data", name + ext)
+        with open(save_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+        st.success(f"Arquivo PDF salvo com sucesso em: {save_path}")
+
+        all_text_segments = load_existing_pdfs()
+        vectorizer, embeddings = create_embeddings(all_text_segments, client=None)
+        st.success("Embeddings criados com sucesso!")
+
+
+# ==== Chat e Processamento Principal ====
 st.title("🔥 IA Generativa Prometeu 💬")
 
 if "messages" not in st.session_state:
@@ -87,14 +108,14 @@ for msg in st.session_state.messages:
 
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user", avatar='🦹‍♂️').write(prompt)
+    st.chat_message("user").write(prompt)  # Removido o avatar do usuário
 
     if prompt:
         try:
             best_match_index, best_match_segment = search_with_embeddings(prompt, vectorizer, embeddings, all_text_segments)
 
             chat_session = model.start_chat(
-            history=[
+                history=[
                     {
                         "role": "model",
                         "parts": [
@@ -118,8 +139,6 @@ if prompt := st.chat_input():
             answer = response.text
 
             st.session_state["messages"].append({"role": "assistant", "content": answer})
-            st.chat_message("assistant", avatar="🕵️‍♂️").write(answer)
+            st.chat_message("assistant", avatar=avatar).write(answer)
         except Exception as e:
             st.error(f"Gemini API error: {e}")
-    else:
-        st.write("Please enter a question.")
