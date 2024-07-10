@@ -75,11 +75,16 @@ vectorizer, embeddings = create_embeddings(all_text_segments, client=None)
 
 # ==== Barra Lateral Personalizada ====
 with st.sidebar:
-    st.image("https://tmssl.akamaized.net/images/foto/galerie/neymar-brazil-2022-1668947300-97010.jpg?lm=1668947335", width=150)
-    st.title("🔥 Zé Devinho 💬")
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <img src="https://i.imgur.com/10PJpQH.png?lm=1668947335" width="150">
+            <h1>Alpha-C, ao seu dispor! 💬</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ==== Botão de Upload de Arquivo ====
-    uploaded_file = st.file_uploader("🚀 Upload do PDF:", type=["pdf"])
+    uploaded_file = st.file_uploader("Upload 📎:", type=["pdf"])
     if uploaded_file is not None:
         original_filename = uploaded_file.name
         name, ext = os.path.splitext(original_filename)
@@ -95,14 +100,20 @@ with st.sidebar:
 
 
 # ==== Chat e Processamento Principal ====
-st.title("🔥 IA Generativa Prometeu 💬")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <img src="https://i.imgur.com/LlUM5am.jpg?lm=1668947335" width="150">
+        <h1>IA Generativa PI</h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "E aí, camarada! Zé Devinho na área, o seu assistente pessoal da Programmers Beyond IT, aqui pra te dar um suporte de primeira. 😎\n\nFala aí, qual trampo que você tá precisando dar um gás? Se liga que o Zé tá pronto pra te ajudar, mano! 🤘\n\n"}
+        {"role": "assistant", "content": "Olá! Alpha-C na área, o seu assistente pessoal da Programmers Beyond IT, aqui pra te dar um suporte de primeira. 😎\n\nDiga como posso lhe ajudar, qual informação esta em busca? Estou a disposição pra te ajudar! 👋\n\n"}
     ]
 
-avatar = 'https://tmssl.akamaized.net/images/foto/galerie/neymar-brazil-2022-1668947300-97010.jpg?lm=1668947335'
+avatar = 'https://i.imgur.com/10PJpQH.png?lm=1668947335'
 for msg in st.session_state.messages:
     st.chat_message(msg["role"], avatar=avatar if msg["role"] == "assistant" else None).write(msg["content"])
 
@@ -119,10 +130,9 @@ if prompt := st.chat_input():
                     {
                         "role": "model",
                         "parts": [
-                            "Você é um assistente pessoal muito ligeiro, fala em girias e seu nome é Zé Devinho. Sua função é servir a todos os colaboradores da Programmers Beyond IT.",
+                            "Você é um assistente pessoal muito ligeiro, fala em girias e seu nome é Alpha-C. Sua função é servir a todos os colaboradores da Programmers Beyond IT.",
                             "Não responda perguntas que fujam do tema: Programmers Beyond IT. E não invente respostas",
                             "Você não deve desencorajar o usuário. Sempre forneça informações úteis e positivas",
-                            "No final de cada frase você diz balinha",
                         ],
                     },
                     {
