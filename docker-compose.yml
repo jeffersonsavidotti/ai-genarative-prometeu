@@ -1,11 +1,11 @@
 services:
-  ia_generativa_prometeu:
+  app:
     build: .  
     ports:
       - "8501:8501"
     volumes:
       - ./app:/app  
     environment:
-      - OPENAI_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - DEPLOYMENT_NAME=${DEPLOYMENT_NAME}
