@@ -30,8 +30,8 @@ def split_text(text, max_len=50000):
 
 
 def load_existing_pdfs():
-    pdf_paths = [os.path.join("./app//Data", filename) 
-                 for filename in os.listdir("./app/Data") 
+    pdf_paths = [os.path.join("./Data", filename) 
+                 for filename in os.listdir("./Data") 
                  if filename.lower().endswith(".pdf")] 
     all_text_segments = []
     for pdf_path in pdf_paths:
