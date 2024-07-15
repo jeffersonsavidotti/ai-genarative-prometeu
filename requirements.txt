@@ -4,5 +4,3 @@ google-generativeai
 pymupdf
 scikit-learn
 numpy
-docker
-docker-compose
